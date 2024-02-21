@@ -1,7 +1,5 @@
 import gradio as gr
 from openai import OpenAI
-import requests
-import json
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,57 +9,34 @@ client = OpenAI()
 system_prompt = """
   You are a prompt engineer for a text to image generation AI model.
   Your job is to ensure that the model generates appropriate images based on the prompt.
-
 """
 
 user_prompt = """
   Translate the original input from Chinese to English.
   Enhance the original input to make it more suitable for the model to generate a cute, high-quality image.
   If the input is too vague, add more details. 
-  Set the main character as a chinese child if it is not specified.
+  Set all main characters as young chinese child.
   Remove anything that is inappropriate for children.
   Do not show any revealing clothing.
   Do not dipict any violence or weapon or horror.
   Do not dispict any smoking, alcohol, or drug.
   Only reply with the new prompt.
 
-  If the original input contains the following words, use the suggested translation: \n
-    1. 鸡蛋卷: crispy rolled wafer pastry
-    2. 肉干: BBQ dried meat jerky slice in shaqe shape and dark red in color
-    3. 欢欢: young chinese toddler girl
-    4. 小雨: young chinese toddler girl
-    5. 小云: young chinese toddler girl
-    6. 康康: young chinese toddler boy
-    7. 巴刹: wet market
-    8. 组屋: 10 storey, multicolored residental flats with Singapore national flags hanging outside some windows
-    9. 字宝宝: card game to learn Chinese words
-    10 冲凉房: shower cubicle
-
   Here is the original input: \n
 """
-
-
-def stablediffusion(prompt):
-  url = "https://stablediffusionapi.com/api/v3/text2img"
-
-  payload = json.dumps({
-    "key": "zUHkLl4AxUM19kd2zW4gjKZPoSug3qnB18iJ4toFQBwi4BICBTYnhwYkBU0O",
-    "prompt": prompt, "negative_prompt": None, "width": "512", "height": "512",
-    "samples": "1", "num_inference_steps": "20", "seed": None, "guidance_scale": 7.5,
-    "safety_checker": "yes", "multi_lingual": "no", "panorama": "no", "self_attention": "no",
-    "upscale": "no", "embeddings_model": None, "webhook": None, "track_id": None
-  })
-
-  response = requests.request("POST", url, headers= {'Content-Type': 'application/json'}, data=payload).json()
-
-  print(response)
-  return response['output'][0]
 
 def generateImg(text):
 
   markdown = 'FOR DEV & DEBUG ONLY (This segment will not be visible to frontend users) \n\n'
 
   markdown = markdown + 'Layer 1: Original Input: \n\n' + text + '\n\n'
+
+  text = text.replace('鸡蛋卷', ' 鸡蛋卷 (a crispy rolled wafer pastry packed vertically in a plastic circular container with red lid) ')
+  text = text.replace('肉干', ' 肉干 (a BBQ dried meat jerky slice in square shape and dark red in color) ')
+  text = text.replace('巴刹', ' 巴刹 (a wet market with fresh produce and a variety of fruit stalls) ')
+  text = text.replace('组屋', ' 组屋 (a 10 storey, multicolored residental flats with potted plants and washed clothes hanging outside some windows. There is a Singapore national flag hanging on a window.) ')
+  text = text.replace('字宝宝', ' 字宝宝 (a card game with square cards and single Chinese character in each card) ')
+
 
   result = client.chat.completions.create(
     model="gpt-3.5-turbo-1106",
@@ -70,6 +45,8 @@ def generateImg(text):
   )
 
   ai_prompt = result.choices[0].message.content 
+
+  ai_prompt = ai_prompt + ' All the characters are young Chinese children.'
 
   markdown = markdown + 'Layer 2: AI LLM Translation & Content Filtering Algorithm: \n\n' + ai_prompt + '\n\n'
 
